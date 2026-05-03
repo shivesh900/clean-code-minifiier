@@ -1,0 +1,21 @@
+{
+  "name": "cleancode-minifier",
+  "version": "1.0.0",
+  "description": "A full-stack JavaScript & CSS code minifier",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "minifier",
+    "javascript",
+    "css",
+    "express"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}

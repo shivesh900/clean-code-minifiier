@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="CleanCode Minifier — Paste JavaScript or CSS and instantly minify it. See original vs minified size at a glance." />
+  <title>CleanCode Minifier</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── Ambient glow blobs ── -->
+  <div class="glow glow--1" aria-hidden="true"></div>
+  <div class="glow glow--2" aria-hidden="true"></div>
+
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <span class="logo__icon">⚡</span>
+        <h1 class="logo__text">Clean<span>Code</span> Minifier</h1>
+      </div>
+      <p class="header__sub">Paste · Minify · Ship smaller code</p>
+    </header>
+
+    <!-- Controls bar -->
+    <div class="controls">
+      <div class="select-wrapper" id="select-wrapper">
+        <label for="language-select" class="sr-only">Language</label>
+        <select id="language-select">
+          <option value="js">JavaScript</option>
+          <option value="css">CSS</option>
+        </select>
+      </div>
+
+      <button id="minify-btn" class="btn btn--primary">
+        <span class="btn__icon">▶</span> Minify
+      </button>
+
+      <button id="copy-btn" class="btn btn--ghost" disabled>
+        <span class="btn__icon">📋</span> Copy Output
+      </button>
+
+      <button id="clear-btn" class="btn btn--ghost">
+        <span class="btn__icon">✕</span> Clear
+      </button>
+
+      <button id="symbol-btn" class="btn btn--sym">
+        <span class="btn__icon">🔍</span> Symbol Table
+      </button>
+
+      <button id="syntax-btn" class="btn btn--syntax">
+        <span class="btn__icon">✓</span> Check Syntax
+      </button>
+    </div>
+
+    <!-- Editor panels -->
+    <div class="panels">
+      <div class="panel">
+        <div class="panel__header">
+          <span class="panel__dot panel__dot--green"></span>
+          <span class="panel__title">Input</span>
+          <span class="panel__badge" id="input-size">0 B</span>
+        </div>
+        <textarea
+          id="input-code"
+          class="panel__editor"
+          placeholder="Paste your JavaScript or CSS here…"
+          spellcheck="false"
+        ></textarea>
+      </div>
+
+      <div class="panel">
+        <div class="panel__header">
+          <span class="panel__dot panel__dot--blue"></span>
+          <span class="panel__title">Output</span>
+          <span class="panel__badge" id="output-size">0 B</span>
+        </div>
+        <textarea
+          id="output-code"
+          class="panel__editor"
+          placeholder="Minified output will appear here…"
+          readonly
+          spellcheck="false"
+        ></textarea>
+      </div>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="stats" id="stats">
+      <div class="stat-card" id="stat-original">
+        <span class="stat-card__label">Original</span>
+        <span class="stat-card__value" id="stat-original-val">—</span>
+      </div>
+      <div class="stat-card" id="stat-minified">
+        <span class="stat-card__label">Minified</span>
+        <span class="stat-card__value" id="stat-minified-val">—</span>
+      </div>
+      <div class="stat-card stat-card--accent" id="stat-saved">
+        <span class="stat-card__label">Saved</span>
+        <span class="stat-card__value" id="stat-saved-val">—</span>
+      </div>
+      <!-- progress ring -->
+      <div class="stat-card stat-card--ring" id="stat-ring">
+        <svg class="ring" viewBox="0 0 80 80">
+          <circle class="ring__bg" cx="40" cy="40" r="34"></circle>
+          <circle class="ring__fg" id="ring-fg" cx="40" cy="40" r="34"
+                  stroke-dasharray="213.628" stroke-dashoffset="213.628"></circle>
+        </svg>
+        <span class="ring__label" id="ring-label">0%</span>
+      </div>
+    </div>
+
+    <!-- Symbol Table Panel -->
+    <div class="sym-panel" id="sym-panel" aria-live="polite">
+      <div class="sym-panel__header">
+        <span class="sym-panel__title">🔍 Symbol Table</span>
+        <span class="sym-panel__meta" id="sym-meta"></span>
+        <button class="sym-panel__close" id="sym-close" aria-label="Close symbol table">✕</button>
+      </div>
+      <div class="sym-panel__body">
+        <table class="sym-table" id="sym-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Keyword</th>
+              <th>Line</th>
+            </tr>
+          </thead>
+          <tbody id="sym-tbody"></tbody>
+        </table>
+        <p class="sym-empty" id="sym-empty">No symbols found.</p>
+      </div>
+    </div>
+
+    <!-- Syntax Check Panel -->
+    <div class="sx-panel" id="sx-panel" aria-live="polite">
+      <div class="sx-panel__header">
+        <span class="sx-panel__title" id="sx-panel-title">✓ Syntax Check</span>
+        <span class="sx-panel__meta" id="sx-meta"></span>
+        <button class="sx-panel__close" id="sx-close" aria-label="Close syntax panel">✕</button>
+      </div>
+      <div class="sx-panel__body" id="sx-body">
+        <!-- success banner -->
+        <div class="sx-ok" id="sx-ok">
+          <span class="sx-ok__icon">✅</span>
+          <div>
+            <strong>No syntax errors found!</strong>
+            <p>All brackets are balanced and properly closed.</p>
+          </div>
+        </div>
+        <!-- error list -->
+        <ul class="sx-errors" id="sx-errors"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
