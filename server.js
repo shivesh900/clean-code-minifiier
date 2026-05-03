@@ -301,3 +301,5 @@ app.post('/syntax-check', (req, res) => {
 app.listen(PORT, () => {
   console.log(`✨ CleanCode Minifier running → http://localhost:${PORT}`);
 });
+
+module.exports = app;
