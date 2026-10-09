@@ -1,11 +1,12 @@
 {
   "name": "cleancode-minifier",
   "version": "1.0.0",
-  "description": "A full-stack JavaScript & CSS code minifier",
+  "description": "Safe JavaScript & CSS minifier with AST verification, symbol table and syntax checker \u2014 runs in the browser and as an Express API",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "test": "node --test"
   },
   "keywords": [
     "minifier",
@@ -13,9 +14,16 @@
     "css",
     "express"
   ],
-  "author": "",
+  "author": "Shivesh Haran P",
   "license": "ISC",
   "dependencies": {
+    "acorn": "^8.19.0",
     "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "css-tree": "^2.3.1"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
