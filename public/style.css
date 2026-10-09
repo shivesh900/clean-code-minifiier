@@ -800,3 +800,17 @@ body {
   .sx-panel__body { padding: 14px; }
   .sx-error-item { padding: 12px 14px; }
 }
+
+/* ── Verification note ─────────────────────────────────────────── */
+.verify-note {
+  display: none;
+  margin: 0 0 1.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.verify-note.visible { display: block; animation: slideIn .35s ease; }
+.verify-note--ok  { background: rgba(16,185,129,.10); color: #6ee7b7; border: 1px solid rgba(16,185,129,.25); }
+.verify-note--bad { background: rgba(239,68,68,.10);  color: #fca5a5; border: 1px solid rgba(239,68,68,.25); }
+.sx-type-pill--syntax { background: rgba(239,68,68,.15); color: #fca5a5; }

@@ -14,6 +14,8 @@ const inputSizeBadge  = document.getElementById('input-size');
 const outputSizeBadge = document.getElementById('output-size');
 
 const statsContainer  = document.getElementById('stats');
+const verifyNote      = document.getElementById('verify-note');
+const sampleBtn       = document.getElementById('sample-btn');
 const statOriginalVal = document.getElementById('stat-original-val');
 const statMinifiedVal = document.getElementById('stat-minified-val');
 const statSavedVal    = document.getElementById('stat-saved-val');
@@ -23,6 +25,33 @@ const ringLabel       = document.getElementById('ring-label');
 // ── Helpers ─────────────────────────────────────────────────────────
 
 /** Human-readable byte size */
+
+// ── Local engine ────────────────────────────────────────────────────
+// Everything runs in the browser through public/js/cleancode.js, so the
+// app also works on static hosting. The Express server (server.js) exposes
+// the very same engine as a JSON API for scripts and CI.
+function engineFetch(url, opts = {}) {
+  const body = JSON.parse(opts.body || '{}');
+  const reply = (status, data) => ({ ok: status < 400, status, json: async () => data });
+  try {
+    if (url === '/minify') {
+      if (!['js', 'css'].includes(body.language)) return reply(400, { error: 'Language must be "js" or "css".' });
+      return reply(200, CleanCode.minify(body.code, body.language));
+    }
+    if (url === '/symbol-table') {
+      const symbols = CleanCode.analyzeSymbols(body.code);
+      return reply(200, { symbols, count: symbols.length });
+    }
+    if (url === '/syntax-check') return reply(200, CleanCode.checkSyntax(body.code, body.language));
+    return reply(404, { error: 'Unknown route' });
+  } catch (err) {
+    const where = err.line ? ` (line ${err.line}${err.col ? `, col ${err.col}` : ''})` : '';
+    return reply(422, { error: `Couldn't parse the input: ${err.message}${where}` });
+  }
+}
+
+const escapeHTML = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 function formatBytes(bytes) {
   if (bytes === 0) return '0 B';
   const k = 1024;
@@ -67,7 +96,7 @@ minifyBtn.addEventListener('click', async () => {
   minifyBtn.innerHTML = '<span class="btn__icon">⏳</span> Minifying…';
 
   try {
-    const res = await fetch('/minify', {
+    const res = await engineFetch('/minify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -106,7 +135,13 @@ minifyBtn.addEventListener('click', async () => {
     ringLabel.textContent = `${pct}%`;
 
     statsContainer.classList.add('visible');
-    showToast('✅  Minification complete!');
+    verifyNote.className = 'verify-note visible ' + (data.verified === false ? 'verify-note--bad' : 'verify-note--ok');
+    verifyNote.textContent = data.verified === true
+      ? '✓ Verified: the minified code parses to exactly the same program (identical AST) as your input.'
+      : data.verified === false
+        ? '⚠ Could not verify the output — please report this input.'
+        : '✓ CSS minified: comments and redundant whitespace removed; strings, url() and calc() untouched.';
+    showToast(data.verified === false ? '⚠️  Minified, but verification failed' : '✅  Minification complete!');
   } catch (err) {
     showToast(`❌  ${err.message}`);
   } finally {
@@ -134,6 +169,7 @@ clearBtn.addEventListener('click', () => {
   outputSizeBadge.textContent = '0 B';
   copyBtn.disabled = true;
   statsContainer.classList.remove('visible');
+  verifyNote.classList.remove('visible');
 
   // Reset ring
   const circumference = 2 * Math.PI * 34;
@@ -180,7 +216,7 @@ symbolBtn.addEventListener('click', async () => {
   symbolBtn.innerHTML = '<span class="btn__icon">⏳</span> Analyzing…';
 
   try {
-    const res = await fetch('/symbol-table', {
+    const res = await engineFetch('/symbol-table', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code }),
@@ -211,9 +247,10 @@ symbolBtn.addEventListener('click', async () => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${i + 1}</td>
-          <td>${sym.name}</td>
+          <td>${escapeHTML(sym.name)}</td>
           <td>${typeBadge(sym.type)}</td>
           <td>${kwPill(sym.keyword)}</td>
+          <td>${escapeHTML(sym.scope || 'global')}</td>
           <td>${sym.line}</td>
         `;
         symTbody.appendChild(tr);
@@ -248,10 +285,10 @@ const sxOk        = document.getElementById('sx-ok');
 const sxErrors    = document.getElementById('sx-errors');
 
 /** Icon per error type */
-const errorIcon = { unclosed: '🔴', mismatch: '🟠', unexpected: '🟣' };
+const errorIcon = { unclosed: '🔴', mismatch: '🟠', unexpected: '🟣', syntax: '⛔' };
 
 /** Human label per error type */
-const errorLabel = { unclosed: 'Unclosed', mismatch: 'Mismatch', unexpected: 'Unexpected' };
+const errorLabel = { unclosed: 'Unclosed', mismatch: 'Mismatch', unexpected: 'Unexpected', syntax: 'Parse error' };
 
 syntaxBtn.addEventListener('click', async () => {
   const code = inputCode.value.trim();
@@ -266,10 +303,10 @@ syntaxBtn.addEventListener('click', async () => {
   syntaxBtn.innerHTML = '<span class="btn__icon">⏳</span> Checking…';
 
   try {
-    const res = await fetch('/syntax-check', {
+    const res = await engineFetch('/syntax-check', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({ code, language: languageSelect.value }),
     });
 
     if (!res.ok) {
@@ -277,7 +314,7 @@ syntaxBtn.addEventListener('click', async () => {
       throw new Error(err.error || 'Server error');
     }
 
-    const data = await res.json();   // { valid, errors }
+    const data = await res.json();   // { valid, errors, parser }
 
     // ── Reset panel state ──
     sxPanel.classList.remove('sx-valid', 'sx-invalid');
@@ -288,7 +325,7 @@ syntaxBtn.addEventListener('click', async () => {
       // ── VALID ──────────────────────────────────────────────────
       sxPanel.classList.add('open', 'sx-valid');
       sxPanelTitle.textContent = '✓ Syntax Check';
-      sxMeta.textContent = 'No errors';
+      sxMeta.textContent = data.parser === 'acorn' ? 'No errors · full ES2024 parse' : 'No errors · bracket check';
       sxOk.classList.add('visible');
       showToast('✅  Syntax looks good!');
 
@@ -315,7 +352,7 @@ syntaxBtn.addEventListener('click', async () => {
         li.innerHTML = `
           <span class="sx-error-icon">${errorIcon[err.type] || '🔴'}</span>
           <div class="sx-error-content">
-            <div class="sx-error-msg">${err.message}</div>
+            <div class="sx-error-msg">${escapeHTML(err.message)}</div>
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
               <span class="sx-error-loc">📍 ${locText}</span>
               <span class="sx-type-pill sx-type-pill--${err.type}">${errorLabel[err.type] || err.type}</span>
@@ -348,3 +385,62 @@ sxClose.addEventListener('click', () => {
 clearBtn.addEventListener('click', () => {
   sxPanel.classList.remove('open', 'sx-valid', 'sx-invalid');
 }, { capture: false });
+
+// ── Sample code ─────────────────────────────────────────────────────
+const SAMPLES = {
+  js: `// Shopping cart helpers — try Minify, Symbol Table and Check Syntax
+const TAX_RATE = 0.18; // 18% GST
+const information = "Prices include GST // shown at checkout";
+
+function formatPrice(amount) {
+  return \`₹\${amount.toFixed(2)}\`;
+}
+
+class Cart {
+  constructor(owner) {
+    this.owner = owner;
+    this.items = [];
+  }
+
+  add(name, price, qty = 1) {
+    this.items.push({ name, price, qty });
+    return this;
+  }
+
+  get total() {
+    const subtotal = this.items.reduce((sum, { price, qty }) => sum + price * qty, 0);
+    return subtotal * (1 + TAX_RATE);
+  }
+}
+
+let newOffer = /^SAVE\\d{2}$/i.test("SAVE10")
+let count = 0
+++count
+
+const cart = new Cart("Shivesh").add("Keyboard", 2499).add("Mouse", 799, 2);
+console.log(information, formatPrice(cart.total), newOffer, count);
+`,
+  css: `/* Card component */
+.card {
+  display: grid;
+  gap: 1rem;
+  padding: calc(1rem + 2px) 1.5rem;
+  background: url("img/card bg.png") no-repeat , #0b0e14;
+  color : #e6e6e6 ;
+}
+
+.card :hover > .title + .subtitle {
+  color: hsl(260 80% 70%);
+}
+
+@media screen and (max-width: 600px) {
+  .card { padding: 0.75rem !important; }
+}
+`,
+};
+
+sampleBtn?.addEventListener('click', () => {
+  inputCode.value = SAMPLES[languageSelect.value] || SAMPLES.js;
+  inputCode.dispatchEvent(new Event('input'));
+  showToast('✨  Sample loaded — hit Minify');
+});

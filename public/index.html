@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="CleanCode Minifier — Paste JavaScript or CSS and instantly minify it. See original vs minified size at a glance." />
+  <meta name="description" content="CleanCode Minifier — paste JavaScript or CSS and minify it safely in your browser. Every JS result is verified to parse to the same program. Symbol table and syntax checker included." />
   <title>CleanCode Minifier</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -44,6 +44,9 @@
         <span class="btn__icon">📋</span> Copy Output
       </button>
 
+      <button id="sample-btn" class="btn btn--ghost">
+        <span class="btn__icon">✨</span> Sample
+      </button>
       <button id="clear-btn" class="btn btn--ghost">
         <span class="btn__icon">✕</span> Clear
       </button>
@@ -114,6 +117,8 @@
       </div>
     </div>
 
+    <p class="verify-note" id="verify-note" aria-live="polite"></p>
+
     <!-- Symbol Table Panel -->
     <div class="sym-panel" id="sym-panel" aria-live="polite">
       <div class="sym-panel__header">
@@ -129,6 +134,7 @@
               <th>Name</th>
               <th>Type</th>
               <th>Keyword</th>
+              <th>Scope</th>
               <th>Line</th>
             </tr>
           </thead>
@@ -151,7 +157,7 @@
           <span class="sx-ok__icon">✅</span>
           <div>
             <strong>No syntax errors found!</strong>
-            <p>All brackets are balanced and properly closed.</p>
+            <p>All brackets are balanced and the code parses cleanly.</p>
           </div>
         </div>
         <!-- error list -->
@@ -160,6 +166,8 @@
     </div>
   </div>
 
+  <script src="vendor/acorn.min.js"></script>
+  <script src="js/cleancode.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
