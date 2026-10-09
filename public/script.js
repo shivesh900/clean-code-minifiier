@@ -193,7 +193,7 @@ const symEmpty   = document.getElementById('sym-empty');
 /** Map type → badge CSS modifier */
 const typeBadge = (type) => {
   const t = type.toLowerCase();
-  const icons = { function: 'ƒ', variable: 'x', class: '◈' };
+  const icons = { function: 'ƒ', variable: 'x', class: '◈', parameter: '→', import: '⇣' };
   return `<span class="sym-badge sym-badge--${t}">${icons[t] || ''} ${type}</span>`;
 };
 

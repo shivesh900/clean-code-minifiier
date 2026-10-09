@@ -814,3 +814,7 @@ body {
 .verify-note--ok  { background: rgba(16,185,129,.10); color: #6ee7b7; border: 1px solid rgba(16,185,129,.25); }
 .verify-note--bad { background: rgba(239,68,68,.10);  color: #fca5a5; border: 1px solid rgba(239,68,68,.25); }
 .sx-type-pill--syntax { background: rgba(239,68,68,.15); color: #fca5a5; }
+
+.sym-badge--parameter { background: rgba(56, 189, 248, .12); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, .28); }
+.sym-badge--import    { background: rgba(244, 114, 182, .12); color: #f9a8d4; border: 1px solid rgba(244, 114, 182, .28); }
+.sym-kw--param, .sym-kw--import { background: rgba(148, 163, 184, .12); color: #cbd5e1; }
